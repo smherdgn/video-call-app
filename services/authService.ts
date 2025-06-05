@@ -1,11 +1,11 @@
-import { LOGIN_API_URL } from '../constants';
+import { Config } from './configService';
 import { User, DecodedToken } from '../types';
 
 const TOKEN_KEY = 'jwtAuthToken';
 
 export const loginUser = async (email: string, password: string): Promise<{ token: string; user: User }> => {
   // Make a real API call to the backend
-  const response = await fetch(LOGIN_API_URL, {
+  const response = await fetch(Config.LOGIN_API_URL, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',

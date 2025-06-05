@@ -1,8 +1,7 @@
-
 import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import io, { Socket } from 'socket.io-client';
 import { getToken } from '../services/authService';
-import { SOCKET_SERVER_URL, SOCKET_PATH } from '../constants';
+import { Config } from '../services/configService'; // Updated import
 import { SignalingMessage } from '../types';
 
 interface SocketContextType {
@@ -24,8 +23,8 @@ export const SocketProvider: React.FC<{ children: ReactNode }> = ({ children }) 
       return;
     }
 
-    const newSocket = io(SOCKET_SERVER_URL, {
-      path: SOCKET_PATH,
+    const newSocket = io(Config.SOCKET_SERVER_URL, { // Use Config
+      path: Config.SOCKET_PATH, // Use Config
       auth: { token },
       transports: ['websocket'] 
     });
@@ -77,4 +76,3 @@ export const useSocket = (): SocketContextType => {
   }
   return context;
 };
-    

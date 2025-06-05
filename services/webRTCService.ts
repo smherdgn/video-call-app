@@ -1,6 +1,33 @@
-
-import { ICE_SERVERS } from '../constants';
+import { Config } from './configService'; // Import ConfigService
 import { LogEntry, WebRTCService } from '../types';
+
+const getIceServers = (): RTCIceServer[] => {
+  const iceServers: RTCIceServer[] = [
+    { urls: 'stun:stun.l.google.com:19302' },
+    { urls: 'stun:stun1.l.google.com:19302' },
+  ];
+
+  const { TURN_URL, TURN_USERNAME, TURN_CREDENTIAL } = Config;
+
+  if (TURN_URL && TURN_USERNAME && TURN_CREDENTIAL) {
+    iceServers.push({
+      urls: TURN_URL,
+      username: TURN_USERNAME,
+      credential: TURN_CREDENTIAL,
+    });
+    console.info('WebRTCService: TURN server configured from ConfigService.');
+  } else {
+    // This warning is particularly important if iceTransportPolicy is 'relay'
+    console.warn(
+      'WebRTCService: TURN server credentials (TURN_URL, TURN_USERNAME, TURN_CREDENTIAL) ' +
+      'are not fully configured via ConfigService. WebRTC connections requiring relay may fail, be suboptimal, or ' +
+      'potentially leak IP addresses if STUN fails and no TURN relay is available. ' +
+      'Ensure these are set in your environment (e.g., via .env file and injected by the hosting platform).'
+    );
+  }
+  return iceServers;
+};
+
 
 const webRTCHandlerImplementation = {
   peerConnection: null as RTCPeerConnection | null,
@@ -29,7 +56,7 @@ const webRTCHandlerImplementation = {
       this._addLogCallback?.('Yerel medya başarıyla alındı.', 'success');
 
       const configuration: RTCConfiguration = { 
-        iceServers: ICE_SERVERS,
+        iceServers: getIceServers(), // Use dynamic getter for ICE servers
         iceTransportPolicy: 'relay' // Enforce TURN relay to prevent IP leak
       };
       this._addLogCallback?.(`Peer bağlantısı oluşturuluyor. ICE transport policy: "${configuration.iceTransportPolicy}"`, 'webrtc');
@@ -65,11 +92,10 @@ const webRTCHandlerImplementation = {
               this._onRemoteStreamCallback(this.remoteStream);
             }
           } else {
-            // Handle cases where track might not be part of a stream yet (though typically it is)
              if (event.track && this.remoteStream) {
                 this.remoteStream.addTrack(event.track);
                 if (this._onRemoteStreamCallback) {
-                    this._onRemoteStreamCallback(this.remoteStream); // Notify update
+                    this._onRemoteStreamCallback(this.remoteStream); 
                 }
             }
           }
@@ -82,7 +108,6 @@ const webRTCHandlerImplementation = {
                 (state === 'connected' || state === 'completed') ? 'success' : 
                 (state === 'failed' || state === 'disconnected' || state === 'closed') ? 'error' : 'webrtc'
               );
-              // Potentially trigger UI updates based on state
           }
         };
          this.peerConnection.onconnectionstatechange = () => {
@@ -171,13 +196,14 @@ const webRTCHandlerImplementation = {
       this.peerConnection.onsignalingstatechange = null;
       this.peerConnection.onconnectionstatechange = null;
       
-      // Stop transceivers to fully tear down connection parts
       this.peerConnection.getTransceivers().forEach(transceiver => {
-        transceiver.stop();
+        if (transceiver.stop) { // Check if stop is available
+            transceiver.stop();
+        }
       });
       
       this.peerConnection.close();
-      this.peerConnection = null; // Important to allow for re-initialization
+      this.peerConnection = null; 
       this._addLogCallback?.('Peer bağlantısı kapatıldı.', 'webrtc');
     }
     if (this.localStream) {
@@ -185,7 +211,7 @@ const webRTCHandlerImplementation = {
       this.localStream = null;
       this._addLogCallback?.('Yerel akış durduruldu.', 'webrtc');
     }
-    this.remoteStream = null; // Clear remote stream reference
+    this.remoteStream = null; 
     this._addLogCallback?.('Uzak akış referansı temizlendi.', 'webrtc');
   },
 };
