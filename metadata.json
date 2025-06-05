@@ -1,0 +1,9 @@
+{
+  "name": " Video Call App",
+  "description": "A WebRTC based video calling application allowing users to make video calls after logging in. Features include audio/video toggling, call hang-up, and connection logging.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ],
+  "prompt": ""
+}
